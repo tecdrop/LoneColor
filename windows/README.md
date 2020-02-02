@@ -9,6 +9,8 @@ LoneColor is very easy to use: simply drop the application or its shortcut on yo
 
 Solid color wallpapers may be a welcome, refreshing and modern change from the traditional photo Wallpapers. They also free up valuable memory and make computers run faster.
 
+![LoneColor for Windows Screenshot](Assets/Screenshots/lonecolor-windows-readme-screenshot.png)
+
 ## Zero Interface
 
 LoneColor has a minimal design and it doesn't need or have a Graphical User Interface. To specify the color you want to use, you simply insert it into the name of the application: by color name (`LoneColor Red`), Web color code (`LoneColor #38D891`), RGB triplet (`LoneColor 82,165,33`), etc. It's like using command line parameters, but a lot easier. And less technical. 
