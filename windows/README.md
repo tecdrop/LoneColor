@@ -17,19 +17,15 @@ LoneColor has a minimal design and it doesn't need or have a Graphical User Inte
 
 With LoneColor it's also very easy to go back. Want to restore your old photo wallpaper? Rename `LoneColor` to `LoneColor C` (or create a `LoneColor C` shortcut), run it, and it will automatically open the Desktop Background Control Panel, where you can easily undo changes. 
 
-LoneColor also has a zero interface [version for Android](https://github.com/appgramming/LoneColor-Android) smartphones and tablets.
+LoneColor also has a zero interface [version for Android](https://github.com/tecdrop/LoneColor-Android) smartphones and tablets.
 
 ## Download
 
-The latest stable version of LoneColor can be downloaded from [Appgramming](https://www.appgramming.com/lonecolor/windows/download/). You can download the Installation package, or a fully portable edition that does not require installation. LoneColor runs on Windows 10, 8, 7, Vista, and XP.
+The latest stable version of LoneColor can be downloaded from [Tecdrop](https://www.tecdrop.com/lonecolor/). You can download the Installation package, or a fully portable edition that does not require installation. LoneColor runs on Windows 10, 8, 7, Vista, and XP.
 
 ## Contributions
 
-Contributions are welcome: code, text, documentation, design, graphics, suggestions. Please fork this repository and contribute back using [pull requests](https://github.com/appgramming/LoneColor-Windows/pulls), [submit an issue](https://github.com/appgramming/LoneColor-Windows/issues), or [send an email](https://www.appgramming.com/support/).
-
-## Author
-
-LoneColor for Windows was created in 2012 by [Horațiu Tănescu](https://horatiu.me), cofounder of [East-Tec](https://www.east-tec.com) and original creator of [east-tec Eraser](https://www.east-tec.com/eraser/), the privacy solution that quickly and securely covers your online and PC tracks.
+Contributions are welcome: code, text, documentation, design, graphics, suggestions. Please fork this repository and contribute back using [pull requests](https://github.com/tecdrop/LoneColor-Windows/pulls), [submit an issue](https://github.com/tecdrop/LoneColor-Windows/issues), or [send an email](https://www.tecdrop.com/support/).
 
 ## License
 

@@ -8,11 +8,11 @@
   "$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/master/StyleCop.Analyzers/StyleCop.Analyzers/Settings/stylecop.schema.json",
   "settings": {
     "documentationRules": {
-      "companyName": "Appgramming",
+      "companyName": "Tecdrop",
       "copyrightText": "Copyright (c) {years} {companyName}\n{url}\nLicensed under the {licenseName}. See {licenseFile} file in the project root for full license information.",
       "variables": {
-	    "url": "https://www.appgramming.com/",
-	    "years": "2012-2017",
+	    "url": "https://www.tecdrop.com/",
+	    "years": "2012-2023",
         "licenseName": "MIT License",
         "licenseFile": "LICENSE"
       }

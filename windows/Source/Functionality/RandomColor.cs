@@ -1,8 +1,8 @@
 ﻿//----------------------------------------------------------------------------------------------------------------------
 //
-// <copyright file="RandomColor.cs" company="Appgramming">
-// Copyright (c) 2012-2017 Appgramming
-// https://www.appgramming.com/
+// <copyright file="RandomColor.cs" company="Tecdrop">
+// Copyright (c) 2012-2023 Tecdrop
+// https://www.tecdrop.com/
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 //
