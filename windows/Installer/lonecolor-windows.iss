@@ -12,24 +12,24 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{2B81E288-F090-4E78-BBF0-170B0B95F152}
 AppName={#MyAppName}
-AppVersion={#MyAppVersion}
-;AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyCompanyName}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
+AppVersion={#MyAppVersion}
+ArchitecturesInstallIn64BitMode=x64
+Compression=lzma
 DefaultDirName={autopf}\{#MyCompanyName}\{#MyAppName}
 DisableProgramGroupPage=yes
 LicenseFile=Files\license.txt
-; Uncomment the following line to run in non administrative install mode (install for current user only.)
-;PrivilegesRequired=lowest
 OutputBaseFilename=lonecolor-installer
-Compression=lzma
-SolidCompression=yes
-WizardStyle=modern
-ArchitecturesInstallIn64BitMode=x64
 SetupIconFile=Files\LonecolorAppIcon.ico
+SolidCompression=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
+VersionInfoCompany={#MyCompanyName}
+VersionInfoCopyright=Copyright (c) 2012-2023 Tecdrop. All Rights Reserved.
+VersionInfoVersion=3.1.0.100
+WizardStyle=modern
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
