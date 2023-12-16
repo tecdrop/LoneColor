@@ -9,7 +9,7 @@ LoneColor is very easy to use: simply drop the application or its shortcut on yo
 
 Solid color wallpapers may be a welcome, refreshing and modern change from the traditional photo Wallpapers. They also free up valuable memory and make computers run faster.
 
-![LoneColor for Windows Screenshot](Assets/Screenshots/lonecolor-windows-readme-screenshot.png)
+![LoneColor for Windows Screenshot](Assets/Repo/lonecolor-windows-readme-screenshot.png)
 
 ## Zero Interface
 
