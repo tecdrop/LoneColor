@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2022 Tecdrop
+ * Copyright (c) 2014-2026 Tecdrop SRL
  * https://www.tecdrop.com
  *
  * Use of this source code is governed by an MIT-style license that can be

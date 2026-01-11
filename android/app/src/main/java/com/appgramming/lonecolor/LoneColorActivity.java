@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2022 Tecdrop
+ * Copyright (c) 2014-2026 Tecdrop SRL
  * https://www.tecdrop.com
  *
  * Use of this source code is governed by an MIT-style license that can be
@@ -71,6 +71,7 @@ public class LoneColorActivity extends Activity {
         } catch (IOException e) {
 
             // Write the stack trace to System.err and copy the reason of the failure to clipboard
+            //noinspection CallToPrintStackTrace
             e.printStackTrace();
             Utils.copyText(this, e.toString());
         }
