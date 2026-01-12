@@ -1,5 +1,11 @@
 # LoneColor for Android
 
+[![Version badge](https://img.shields.io/github/v/tag/tecdrop/LoneColor?color=forestgreen&label=version)](https://github.com/tecdrop/LoneColor/releases)
+[![MIT License badge](https://img.shields.io/github/license/tecdrop/LoneColor?color=9c0000)](LICENSE)
+[![GitHub Code Size badge](https://img.shields.io/github/languages/code-size/tecdrop/LoneColor)](https://github.com/tecdrop/LoneColor)
+[![Contributions Welcome badge](https://img.shields.io/badge/contributions-welcome-cornflowerblue)](#Contributing)
+![Downloads from GitHub Releases](https://img.shields.io/github/downloads/tecdrop/LoneColor/total)
+
 > "One of the most simplistic and cleverly designed apps we've seen in a long time."<br />
 > &mdash; <cite>Softpedia Excellent Editor's Review Award</cite>
 
@@ -56,7 +62,7 @@ src="/repo-assets/screenshots/lonecolor-android-screenshot-paste.png" width="256
 
 ## Contributions
 
-Contributions are welcome: code, text, documentation, design, graphics, suggestions. Please fork this repository and contribute back using [pull requests](https://github.com/tecdrop/LoneColor-Android/pulls), [submit an issue](https://github.com/tecdrop/LoneColor-Android/issues), or [send an email](https://www.tecdrop.com/contact/).
+Contributions are welcome: code, text, documentation, design, graphics, suggestions. Please fork this repository and contribute back using [pull requests](https://github.com/tecdrop/LoneColor-Android/pulls), [submit an issue](https://github.com/tecdrop/LoneColor-Android/issues), or [send an email](https://www.tecdrop.com/support/).
 
 ## License
 
