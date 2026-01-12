@@ -23,7 +23,10 @@ LoneColor also has a zero interface [version](https://github.com/tecdrop/LoneCol
 
 ## Download
 
-<a href='https://play.google.com/store/apps/details?id=com.appgramming.lonecolor'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' width="240"/></a>
+<p float="left">
+  <a href="https://play.google.com/store/apps/details?id=com.appgramming.lonecolor"><img height="75" src="repo-assets/buttons/get-it-on-google-play.png" alt="Get LoneColor for Android on Google Play"></a>&nbsp;
+  <a href="https://github.com/tecdrop/LoneColor/releases/latest"><img height="75" src="repo-assets/buttons/download-from-github-releases.png" alt="Download LoneColor for Android from GitHub Releases"></a>
+</p>
 
 ## Screenshots
 
