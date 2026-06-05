@@ -2,9 +2,35 @@
 name = "lonecolor"
 version = "4.0.0"
 edition = "2024"
+description = "Set the Windows desktop background to a solid color."
+authors = ["Tecdrop"]
+license = "MIT"
+repository = "https://github.com/tecdrop/LoneColor"
 
 [[bin]]
 name = "LoneColor"
 path = "src/main.rs"
 
 [dependencies]
+clipboard-win = "5.4.1"
+csscolorparser = { version = "0.8.3", features = ["named-colors"] }
+thiserror = "2.0.18"
+windows = { version = "0.62.2", features = [
+    "Win32_Foundation",
+    "Win32_Security_Cryptography",
+    "Win32_System_Com",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[build-dependencies]
+winresource = "0.1.31"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
