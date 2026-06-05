@@ -1,0 +1,10 @@
+[package]
+name = "lonecolor"
+version = "4.0.0"
+edition = "2024"
+
+[[bin]]
+name = "LoneColor"
+path = "src/main.rs"
+
+[dependencies]
