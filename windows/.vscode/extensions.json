@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "fill-labs.dependi",
+        "mhutchie.git-graph",
+        "ms-vscode.cpptools",
+        "nhoizey.gremlins",
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+    ]
+}
