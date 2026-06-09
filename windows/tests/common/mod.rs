@@ -50,6 +50,10 @@ const BASELINE: COLORREF = COLORREF(0x0001_0203);
 /// to raise if a slow machine flakes.
 const IMAGE_APPLY_WAIT: Duration = Duration::from_millis(1500);
 
+/// How long to keep a set wallpaper on screen before moving on, so the change is
+/// clearly visible to someone watching the run.
+const VISIBLE_HOLD: Duration = Duration::from_millis(1000);
+
 /// How the app is launched - the two real parameter-bearing mechanisms.
 #[derive(Clone, Copy)]
 pub enum Launch {
@@ -189,6 +193,7 @@ impl Harness {
                 );
             }
         }
+        sleep(VISIBLE_HOLD);
     }
 
     /// Runs one color case, delivering the color text through the given input path.
@@ -219,6 +224,7 @@ impl Harness {
                 want.0, bg, image
             );
         }
+        sleep(VISIBLE_HOLD);
     }
 
     /// Applies the start state and waits until it is actually showing, so no
@@ -243,10 +249,12 @@ impl Harness {
             StartState::Color => settle(|| background_color(wp).0 == BASELINE.0 && no_image_showing(wp)),
         };
         assert!(settled, "the starting wallpaper state did not settle");
-        // Let a slow image apply finish before launching, so it cannot re-show the
-        // image after the run disables it.
-        if matches!(start, StartState::Image) {
-            sleep(IMAGE_APPLY_WAIT);
+        // Keep the start state on screen a moment so the change is visible. For an
+        // image this wait also lets the slow apply finish before launch, so it cannot
+        // re-show the image after the run disables it.
+        match start {
+            StartState::Image => sleep(IMAGE_APPLY_WAIT),
+            StartState::Color => sleep(VISIBLE_HOLD),
         }
     }
 

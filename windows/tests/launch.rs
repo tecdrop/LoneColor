@@ -5,16 +5,20 @@
 // https://www.tecdrop.com/lonecolor/license/.
 
 //! End-to-end tests that launch the app the way users do and assert the resulting
-//! wallpaper color and clipboard text. Every color format is exercised through all
-//! three input paths - a renamed executable, a renamed shortcut, and the clipboard.
+//! wallpaper color and clipboard text. Every color format runs through all three
+//! input paths - a renamed executable, a renamed shortcut, and the clipboard - and
+//! from both start states, an image wallpaper and a solid color.
 //!
-//! Ignored by default: they need an interactive desktop and they change (then
-//! restore) the real wallpaper. The image-start tests also require an image
-//! wallpaper to be set, and fail with a precondition message if it is not. Run:
+//! Each step prints what it is testing and holds the set color on screen briefly,
+//! so the run can be watched. Pass `--nocapture` to see the progress messages:
 //!
 //! ```text
-//! cargo test --test launch -- --ignored
+//! cargo test --test launch -- --ignored --nocapture --test-threads=1
 //! ```
+//!
+//! Ignored by default: they need an interactive desktop with an image wallpaper set
+//! (they fail with a precondition message otherwise), and they change - then restore
+//! - the real wallpaper.
 
 mod common;
 
@@ -63,59 +67,68 @@ const ERRORS: &[Case] = &[
 
 const RANDOM: Case = Case { args: "", seed_clipboard: None, expect: Expect::Random };
 
-#[test]
-#[serial_test::file_serial]
-#[ignore = "needs an interactive desktop with an image wallpaper; changes the real wallpaper"]
-fn exe_format_matrix() {
-    let h = Harness::bootstrap();
-    h.require_image_baseline();
-    for case in FORMATS {
-        h.run_color(case, Input::ExeName, StartState::Image);
-    }
-    for case in FORMATS {
-        h.run_color(case, Input::ExeName, StartState::Color);
+fn start_label(start: StartState) -> &'static str {
+    match start {
+        StartState::Image => "image to color",
+        StartState::Color => "color to color",
     }
 }
 
-#[test]
-#[serial_test::file_serial]
-#[ignore = "needs an interactive desktop; changes the real wallpaper"]
-fn shortcut_format_matrix() {
-    let h = Harness::bootstrap();
-    for case in FORMATS {
-        h.run_color(case, Input::ShortcutName, StartState::Color);
-    }
-}
-
-#[test]
-#[serial_test::file_serial]
-#[ignore = "needs an interactive desktop; changes the real wallpaper"]
-fn clipboard_format_matrix() {
-    let h = Harness::bootstrap();
-    for case in FORMATS.iter().chain(CLIPBOARD_EXTRA) {
-        h.run_color(case, Input::Clipboard, StartState::Color);
+/// Runs the format matrix through one input path, from both start states, narrating each step.
+fn format_section(h: &Harness, input: Input, extras: &[ColorCase]) {
+    for start in [StartState::Image, StartState::Color] {
+        println!("\n  -- {} --", start_label(start));
+        for case in FORMATS.iter().chain(extras) {
+            println!("    Testing {}", case.text);
+            h.run_color(case, input, start);
+        }
     }
 }
 
 #[test]
 #[serial_test::file_serial]
 #[ignore = "needs an interactive desktop with an image wallpaper; changes the real wallpaper"]
-fn name_scenarios_from_image() {
+fn exe_name_input_path() {
     let h = Harness::bootstrap();
     h.require_image_baseline();
-    for case in SWITCHES.iter().chain(ERRORS) {
-        h.run(case, Launch::Exe, StartState::Image);
-    }
-    h.run(&RANDOM, Launch::Exe, StartState::Image);
+    println!("\n=== Input path: executable name ===");
+    format_section(&h, Input::ExeName, &[]);
 }
 
 #[test]
 #[serial_test::file_serial]
 #[ignore = "needs an interactive desktop with an image wallpaper; changes the real wallpaper"]
-fn shortcut_smoke_from_image() {
+fn shortcut_name_input_path() {
     let h = Harness::bootstrap();
     h.require_image_baseline();
-    let red = Case { args: "red", seed_clipboard: None, expect: Expect::Hex("#FF0000") };
-    h.run(&red, Launch::Shortcut, StartState::Image); // a named color, via shortcut
-    h.run(&ERRORS[0], Launch::Shortcut, StartState::Image); // the error path, via shortcut
+    println!("\n=== Input path: shortcut name ===");
+    format_section(&h, Input::ShortcutName, &[]);
+}
+
+#[test]
+#[serial_test::file_serial]
+#[ignore = "needs an interactive desktop with an image wallpaper; changes the real wallpaper"]
+fn clipboard_input_path() {
+    let h = Harness::bootstrap();
+    h.require_image_baseline();
+    println!("\n=== Input path: clipboard ===");
+    format_section(&h, Input::Clipboard, CLIPBOARD_EXTRA);
+}
+
+#[test]
+#[serial_test::file_serial]
+#[ignore = "needs an interactive desktop with an image wallpaper; changes the real wallpaper"]
+fn name_parsing_scenarios() {
+    let h = Harness::bootstrap();
+    h.require_image_baseline();
+    println!("\n=== Name-parsing scenarios (executable name) ===");
+    for start in [StartState::Image, StartState::Color] {
+        println!("\n  -- {} --", start_label(start));
+        for case in SWITCHES.iter().chain(ERRORS) {
+            println!("    Testing {}", case.args);
+            h.run(case, Launch::Exe, start);
+        }
+        println!("    Testing (random)");
+        h.run(&RANDOM, Launch::Exe, start);
+    }
 }
