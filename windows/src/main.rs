@@ -1,3 +1,9 @@
+// Copyright 2012-2026 Tecdrop
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://www.tecdrop.com/lonecolor/license/.
+
 //! LoneColor for Windows - fills the desktop with a solid color, then exits.
 //!
 //! The color comes from the launch name, the clipboard, or a random fallback.

@@ -1,3 +1,9 @@
+// Copyright 2012-2026 Tecdrop
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://www.tecdrop.com/lonecolor/license/.
+
 //! Embeds the app icon and Windows version info into the executable.
 
 fn main() {

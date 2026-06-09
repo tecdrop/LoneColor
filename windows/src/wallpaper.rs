@@ -1,3 +1,9 @@
+// Copyright 2012-2026 Tecdrop
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://www.tecdrop.com/lonecolor/license/.
+
 //! Sets the desktop background to a solid color via the IDesktopWallpaper COM interface.
 
 use windows::Win32::System::Com::{
