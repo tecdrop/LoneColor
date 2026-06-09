@@ -19,6 +19,7 @@
 #![allow(dead_code)]
 
 use std::ffi::{OsStr, c_void};
+use std::io::Write;
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -148,6 +149,7 @@ impl Harness {
 
         let wp = desktop_wallpaper();
         self.apply_start_state(&wp, start);
+        announce(if case.args.is_empty() { "(random)" } else { case.args });
         let before = fingerprint(&wp);
 
         let stem = if case.args.is_empty() {
@@ -200,6 +202,7 @@ impl Harness {
     pub fn run_color(&self, case: &ColorCase, input: Input, start: StartState) {
         let wp = desktop_wallpaper();
         self.apply_start_state(&wp, start);
+        announce(case.text);
 
         let (stem, seed, launch) = match input {
             Input::ExeName => (format!("LoneColor {}", case.text), SENTINEL, Launch::Exe),
@@ -397,6 +400,13 @@ fn settle(check: impl Fn() -> bool) -> bool {
         }
         sleep(Duration::from_millis(50));
     }
+}
+
+/// Prints which case is about to run and flushes, so the line lands on screen in
+/// step with the wallpaper change rather than buffered ahead of it.
+fn announce(label: &str) {
+    println!("    Testing {label}");
+    let _ = std::io::stdout().flush();
 }
 
 fn desktop_wallpaper() -> IDesktopWallpaper {

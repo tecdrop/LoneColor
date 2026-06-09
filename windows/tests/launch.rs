@@ -79,7 +79,6 @@ fn format_section(h: &Harness, input: Input, extras: &[ColorCase]) {
     for start in [StartState::Image, StartState::Color] {
         println!("\n  -- {} --", start_label(start));
         for case in FORMATS.iter().chain(extras) {
-            println!("    Testing {}", case.text);
             h.run_color(case, input, start);
         }
     }
@@ -125,10 +124,8 @@ fn name_parsing_scenarios() {
     for start in [StartState::Image, StartState::Color] {
         println!("\n  -- {} --", start_label(start));
         for case in SWITCHES.iter().chain(ERRORS) {
-            println!("    Testing {}", case.args);
             h.run(case, Launch::Exe, start);
         }
-        println!("    Testing (random)");
         h.run(&RANDOM, Launch::Exe, start);
     }
 }
