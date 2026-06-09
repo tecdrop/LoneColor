@@ -6,10 +6,12 @@
 
 //! End-to-end tests that launch the app the way users do - a renamed executable,
 //! or a shortcut whose name carries the parameters - and assert the resulting
-//! wallpaper color and clipboard text.
+//! wallpaper color and clipboard text. The matrix runs from both start states:
+//! an image wallpaper (the common case) and a solid color.
 //!
 //! Ignored by default: they need an interactive desktop and they change (then
-//! restore) the real wallpaper. Run them with:
+//! restore) the real wallpaper. The image-start tests also require an image
+//! wallpaper to be set, and fail with a precondition message if it is not. Run:
 //!
 //! ```text
 //! cargo test --test launch -- --ignored
@@ -17,7 +19,7 @@
 
 mod common;
 
-use common::{Case, Expect, Harness, Launch};
+use common::{Case, Expect, Harness, Launch, StartState};
 
 const FORMATS: &[Case] = &[
     Case { args: "red", seed_clipboard: None, expect: Expect::Hex("#FF0000") },
@@ -60,21 +62,37 @@ const ERRORS: &[Case] = &[
     },
 ];
 
+fn all_cases() -> impl Iterator<Item = &'static Case> {
+    FORMATS.iter().chain(SWITCHES).chain(SOURCES).chain(ERRORS)
+}
+
 #[test]
 #[serial_test::file_serial]
-#[ignore = "needs an interactive desktop; changes the real wallpaper"]
-fn exe_launch_matrix() {
+#[ignore = "needs an interactive desktop with an image wallpaper; changes the real wallpaper"]
+fn exe_matrix_from_image() {
     let h = Harness::bootstrap();
-    for case in FORMATS.iter().chain(SWITCHES).chain(SOURCES).chain(ERRORS) {
-        h.run(case, Launch::Exe);
+    h.require_image_baseline();
+    for case in all_cases() {
+        h.run(case, Launch::Exe, StartState::Image);
     }
 }
 
 #[test]
 #[serial_test::file_serial]
 #[ignore = "needs an interactive desktop; changes the real wallpaper"]
-fn shortcut_launch_smoke() {
+fn exe_matrix_from_color() {
     let h = Harness::bootstrap();
-    h.run(&FORMATS[0], Launch::Shortcut); // a named color, via shortcut
-    h.run(&ERRORS[0], Launch::Shortcut); // the error path, via shortcut
+    for case in all_cases() {
+        h.run(case, Launch::Exe, StartState::Color);
+    }
+}
+
+#[test]
+#[serial_test::file_serial]
+#[ignore = "needs an interactive desktop with an image wallpaper; changes the real wallpaper"]
+fn shortcut_smoke_from_image() {
+    let h = Harness::bootstrap();
+    h.require_image_baseline();
+    h.run(&FORMATS[0], Launch::Shortcut, StartState::Image); // a named color, via shortcut
+    h.run(&ERRORS[0], Launch::Shortcut, StartState::Image); // the error path, via shortcut
 }

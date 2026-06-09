@@ -9,6 +9,12 @@
 //! Bootstraps one copy of the built binary and one shortcut, renames them per
 //! case (the launch name carries the parameters), runs them, and asserts the
 //! resulting wallpaper and clipboard state through the live IDesktopWallpaper API.
+//!
+//! Each case starts from a chosen wallpaper state - the user's real image (the
+//! common scenario) or a solid baseline color - which is applied and settled
+//! before launch, so the shell's asynchronous wallpaper updates cannot race the
+//! read-back. The prior wallpaper and clipboard are snapshotted once and restored
+//! when the harness drops.
 
 #![allow(dead_code)]
 
@@ -35,11 +41,29 @@ use windows::core::{PCWSTR, PWSTR};
 /// the random path instead of an accidental leftover color.
 const SENTINEL: &str = "lonecolor-e2e-sentinel";
 
+/// The baseline for color-start cases - a distinct color unlikely to equal a test color.
+const BASELINE: COLORREF = COLORREF(0x0001_0203);
+
+/// How long to let an image apply settle before launching. `SetWallpaper` finishes
+/// asynchronously and exposes no completion signal, and a late finish re-shows the
+/// image after the run has disabled it. This wait covers that tail; it is the knob
+/// to raise if a slow machine flakes.
+const IMAGE_APPLY_WAIT: Duration = Duration::from_millis(1500);
+
 /// How the app is launched - the two real parameter-bearing mechanisms.
 #[derive(Clone, Copy)]
 pub enum Launch {
     Exe,
     Shortcut,
+}
+
+/// The wallpaper state a case starts from.
+#[derive(Clone, Copy)]
+pub enum StartState {
+    /// The user's current image wallpaper - the common real scenario.
+    Image,
+    /// A solid baseline color.
+    Color,
 }
 
 /// The expected outcome of a run.
@@ -48,7 +72,7 @@ pub enum Expect {
     Hex(&'static str),
     /// Random color: clipboard `Color #RRGGBB`, wallpaper equals that color, no image.
     Random,
-    /// Error: clipboard equals the text, wallpaper unchanged from the snapshot.
+    /// Error: clipboard equals the text, wallpaper unchanged from the start state.
     Error(&'static str),
 }
 
@@ -66,11 +90,12 @@ pub struct Harness {
     dir: PathBuf,
     exe_hold: PathBuf,
     lnk_hold: PathBuf,
+    guard: StateGuard,
 }
 
 impl Harness {
-    /// Copies the built binary once and creates one shortcut to it; both get
-    /// renamed per case later.
+    /// Copies the built binary once, creates one shortcut to it, and snapshots the
+    /// wallpaper and clipboard for restoration at the end. Both get renamed per case.
     pub fn bootstrap() -> Self {
         let exe_src = PathBuf::from(env!("CARGO_BIN_EXE_LoneColor"));
         let dir = tempfile::tempdir().expect("create temp dir");
@@ -82,59 +107,99 @@ impl Harness {
         let lnk_hold = dirp.join("_hold.lnk");
         create_shortcut(&lnk_hold, &exe_src);
 
-        Self { _dir: dir, dir: dirp, exe_hold, lnk_hold }
+        Self { _dir: dir, dir: dirp, exe_hold, lnk_hold, guard: StateGuard::snapshot() }
     }
 
-    /// Runs one case through the given launch mechanism and asserts the result.
-    pub fn run(&self, case: &Case, via: Launch) {
-        let guard = StateGuard::snapshot();
+    /// Fails loudly if the current wallpaper is not an image - the image-start
+    /// cases need a real image to transition from.
+    pub fn require_image_baseline(&self) {
+        assert!(
+            !self.guard.images.is_empty(),
+            "PRECONDITION: the image-start tests need an image desktop wallpaper, but the \
+             current wallpaper is a solid color. Set a photo wallpaper and re-run."
+        );
+    }
+
+    /// Runs one case from the given start state through the given launch mechanism.
+    pub fn run(&self, case: &Case, via: Launch, start: StartState) {
         clipboard_win::set_clipboard_string(case.seed_clipboard.unwrap_or(SENTINEL))
             .expect("seed clipboard");
+
+        let wp = desktop_wallpaper();
+        self.apply_start_state(&wp, start);
+        let before = fingerprint(&wp);
 
         let stem = if case.args.is_empty() {
             "LoneColor".to_string()
         } else {
             format!("LoneColor {}", case.args)
         };
-
         match via {
             Launch::Exe => self.launch_exe(&stem),
             Launch::Shortcut => self.launch_shortcut(&stem),
         }
 
         let clip = clipboard_win::get_clipboard_string().unwrap_or_default();
-        let wp = desktop_wallpaper();
         match &case.expect {
             Expect::Hex(hex) => {
                 assert_eq!(clip, format!("Color {hex}"), "clipboard for `{}`", case.args);
-                assert_eq!(
-                    background_color(&wp).0,
-                    hex_to_colorref(hex).0,
-                    "background color for `{}`",
-                    case.args
-                );
-                assert!(no_image_showing(&wp), "expected no image for `{}`", case.args);
+                let want = hex_to_colorref(hex);
+                if !settle(|| background_color(&wp).0 == want.0 && no_image_showing(&wp)) {
+                    let (bg, image) = fingerprint(&wp);
+                    panic!(
+                        "`{}`: wanted bg={:#010X} no-image, got bg={:#010X} image_showing={}",
+                        case.args, want.0, bg, image
+                    );
+                }
             }
             Expect::Random => {
                 let hex = clip
                     .strip_prefix("Color ")
                     .unwrap_or_else(|| panic!("unexpected random clipboard: {clip:?}"));
-                assert_eq!(
-                    background_color(&wp).0,
-                    hex_to_colorref(hex).0,
-                    "random wallpaper should equal the reported color"
+                let want = hex_to_colorref(hex);
+                assert!(
+                    settle(|| background_color(&wp).0 == want.0 && no_image_showing(&wp)),
+                    "random wallpaper did not settle to {hex} (solid, no image)"
                 );
-                assert!(no_image_showing(&wp), "expected no image for random");
             }
             Expect::Error(text) => {
                 assert_eq!(clip, *text, "error clipboard for `{}`", case.args);
                 assert_eq!(
-                    background_color(&wp).0,
-                    guard.color.0,
+                    fingerprint(&wp),
+                    before,
                     "wallpaper must be unchanged for error `{}`",
                     case.args
                 );
             }
+        }
+    }
+
+    /// Applies the start state and waits until it is actually showing, so no
+    /// in-flight wallpaper change races the run that follows.
+    fn apply_start_state(&self, wp: &IDesktopWallpaper, start: StartState) {
+        unsafe {
+            match start {
+                StartState::Image => {
+                    for (id, path) in &self.guard.images {
+                        let _ = wp.SetWallpaper(PCWSTR(id.as_ptr()), PCWSTR(path.as_ptr()));
+                    }
+                    let _ = wp.Enable(true);
+                }
+                StartState::Color => {
+                    let _ = wp.SetBackgroundColor(BASELINE);
+                    let _ = wp.Enable(false);
+                }
+            }
+        }
+        let settled = match start {
+            StartState::Image => settle(|| !no_image_showing(wp)),
+            StartState::Color => settle(|| background_color(wp).0 == BASELINE.0 && no_image_showing(wp)),
+        };
+        assert!(settled, "the starting wallpaper state did not settle");
+        // Let a slow image apply finish before launching, so it cannot re-show the
+        // image after the run disables it.
+        if matches!(start, StartState::Image) {
+            sleep(IMAGE_APPLY_WAIT);
         }
     }
 
@@ -258,6 +323,21 @@ fn poll_clipboard_change(before: &str) {
     }
 }
 
+/// Retries `check` for a short window, to absorb the shell applying a wallpaper
+/// change asynchronously after the app process has already exited.
+fn settle(check: impl Fn() -> bool) -> bool {
+    let start = Instant::now();
+    loop {
+        if check() {
+            return true;
+        }
+        if start.elapsed() > Duration::from_secs(3) {
+            return false;
+        }
+        sleep(Duration::from_millis(50));
+    }
+}
+
 fn desktop_wallpaper() -> IDesktopWallpaper {
     unsafe {
         let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
@@ -283,6 +363,11 @@ fn no_image_showing(wp: &IDesktopWallpaper) -> bool {
         }
         true
     }
+}
+
+/// The wallpaper as a comparable fingerprint: (background color, is an image showing).
+fn fingerprint(wp: &IDesktopWallpaper) -> (u32, bool) {
+    (background_color(wp).0, !no_image_showing(wp))
 }
 
 /// Reads a COM-allocated wide string into a `String` and frees it.
