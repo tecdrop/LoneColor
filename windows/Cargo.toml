@@ -34,3 +34,10 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+[dev-dependencies]
+serial_test = { version = "3.5.0", features = ["file_locks"] }
+tempfile = "3.27.0"
+# Test-only window feature: ShellExecuteExW/SHELLEXECUTEINFOW are gated behind it.
+# Kept out of the shipped binary by living here rather than in [dependencies].
+windows = { version = "0.62.2", features = ["Win32_System_Registry"] }
