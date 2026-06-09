@@ -85,6 +85,23 @@ pub struct Case {
     pub expect: Expect,
 }
 
+/// The path a color text is delivered through - the three ways a user gives LoneColor a color.
+#[derive(Clone, Copy, Debug)]
+pub enum Input {
+    /// In the executable's name.
+    ExeName,
+    /// In a shortcut's name.
+    ShortcutName,
+    /// On the clipboard, with a bare-named run.
+    Clipboard,
+}
+
+/// A color text and the `#RRGGBB` it should resolve to, run through any `Input`.
+pub struct ColorCase {
+    pub text: &'static str,
+    pub expect: &'static str,
+}
+
 pub struct Harness {
     _dir: tempfile::TempDir,
     dir: PathBuf,
@@ -171,6 +188,36 @@ impl Harness {
                     case.args
                 );
             }
+        }
+    }
+
+    /// Runs one color case, delivering the color text through the given input path.
+    pub fn run_color(&self, case: &ColorCase, input: Input, start: StartState) {
+        let wp = desktop_wallpaper();
+        self.apply_start_state(&wp, start);
+
+        let (stem, seed, launch) = match input {
+            Input::ExeName => (format!("LoneColor {}", case.text), SENTINEL, Launch::Exe),
+            Input::ShortcutName => (format!("LoneColor {}", case.text), SENTINEL, Launch::Shortcut),
+            Input::Clipboard => ("LoneColor".to_string(), case.text, Launch::Exe),
+        };
+        clipboard_win::set_clipboard_string(seed).expect("seed clipboard");
+
+        match launch {
+            Launch::Exe => self.launch_exe(&stem),
+            Launch::Shortcut => self.launch_shortcut(&stem),
+        }
+
+        let clip = clipboard_win::get_clipboard_string().unwrap_or_default();
+        let label = format!("`{}` via {input:?}", case.text);
+        assert_eq!(clip, format!("Color {}", case.expect), "clipboard for {label}");
+        let want = hex_to_colorref(case.expect);
+        if !settle(|| background_color(&wp).0 == want.0 && no_image_showing(&wp)) {
+            let (bg, image) = fingerprint(&wp);
+            panic!(
+                "{label}: wanted bg={:#010X} no-image, got bg={:#010X} image_showing={}",
+                want.0, bg, image
+            );
         }
     }
 
@@ -267,6 +314,12 @@ impl Drop for StateGuard {
                 }
                 let _ = self.wp.Enable(true);
             }
+        }
+        // An image restore applies asynchronously; wait for it so the image is back
+        // before the process exits, instead of leaving the last test color showing.
+        if !self.images.is_empty() {
+            let _ = settle(|| !no_image_showing(&self.wp));
+            sleep(IMAGE_APPLY_WAIT);
         }
         if let Some(text) = &self.clipboard {
             let _ = clipboard_win::set_clipboard_string(text);

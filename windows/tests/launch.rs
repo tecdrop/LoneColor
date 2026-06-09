@@ -4,10 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://www.tecdrop.com/lonecolor/license/.
 
-//! End-to-end tests that launch the app the way users do - a renamed executable,
-//! or a shortcut whose name carries the parameters - and assert the resulting
-//! wallpaper color and clipboard text. The matrix runs from both start states:
-//! an image wallpaper (the common case) and a solid color.
+//! End-to-end tests that launch the app the way users do and assert the resulting
+//! wallpaper color and clipboard text. Every color format is exercised through all
+//! three input paths - a renamed executable, a renamed shortcut, and the clipboard.
 //!
 //! Ignored by default: they need an interactive desktop and they change (then
 //! restore) the real wallpaper. The image-start tests also require an image
@@ -19,32 +18,32 @@
 
 mod common;
 
-use common::{Case, Expect, Harness, Launch, StartState};
+use common::{Case, ColorCase, Expect, Harness, Input, Launch, StartState};
 
-const FORMATS: &[Case] = &[
-    Case { args: "red", seed_clipboard: None, expect: Expect::Hex("#FF0000") },
-    Case { args: "rebeccapurple", seed_clipboard: None, expect: Expect::Hex("#663399") },
-    Case { args: "#52A521", seed_clipboard: None, expect: Expect::Hex("#52A521") },
-    Case { args: "52A521", seed_clipboard: None, expect: Expect::Hex("#52A521") },
-    Case { args: "#abc", seed_clipboard: None, expect: Expect::Hex("#AABBCC") },
-    Case { args: "rgb(82,165,33)", seed_clipboard: None, expect: Expect::Hex("#52A521") },
+/// The color formats, each with the `#RRGGBB` it resolves to. Run through every input path.
+const FORMATS: &[ColorCase] = &[
+    ColorCase { text: "red", expect: "#FF0000" },
+    ColorCase { text: "rebeccapurple", expect: "#663399" },
+    ColorCase { text: "#52A521", expect: "#52A521" },
+    ColorCase { text: "52A521", expect: "#52A521" },
+    ColorCase { text: "#abc", expect: "#AABBCC" },
+    ColorCase { text: "rgb(82,165,33)", expect: "#52A521" },
     // R != G != B - catches a wrong COLORREF byte order through the real API.
-    Case { args: "#123456", seed_clipboard: None, expect: Expect::Hex("#123456") },
-    Case { args: "#000000", seed_clipboard: None, expect: Expect::Hex("#000000") },
-    Case { args: "#FFFFFF", seed_clipboard: None, expect: Expect::Hex("#FFFFFF") },
+    ColorCase { text: "#123456", expect: "#123456" },
+    ColorCase { text: "#000000", expect: "#000000" },
+    ColorCase { text: "#FFFFFF", expect: "#FFFFFF" },
+];
+
+/// Forms only the clipboard accepts - the name path splits on spaces.
+const CLIPBOARD_EXTRA: &[ColorCase] = &[
+    ColorCase { text: "rgb(82, 165, 33)", expect: "#52A521" }, // spaces inside the function
+    ColorCase { text: "  #52A521  ", expect: "#52A521" },      // surrounding whitespace, trimmed
 ];
 
 const SWITCHES: &[Case] = &[
     // A switch must not clobber the color, in either order (regression for the old C# bug).
     Case { args: "s red", seed_clipboard: None, expect: Expect::Hex("#FF0000") },
     Case { args: "red s", seed_clipboard: None, expect: Expect::Hex("#FF0000") },
-];
-
-const SOURCES: &[Case] = &[
-    // A color on the clipboard is used by a bare run.
-    Case { args: "", seed_clipboard: Some("#52A521"), expect: Expect::Hex("#52A521") },
-    // Non-color clipboard on a bare run falls through to a random color.
-    Case { args: "", seed_clipboard: None, expect: Expect::Random },
 ];
 
 const ERRORS: &[Case] = &[
@@ -62,29 +61,52 @@ const ERRORS: &[Case] = &[
     },
 ];
 
-fn all_cases() -> impl Iterator<Item = &'static Case> {
-    FORMATS.iter().chain(SWITCHES).chain(SOURCES).chain(ERRORS)
-}
+const RANDOM: Case = Case { args: "", seed_clipboard: None, expect: Expect::Random };
 
 #[test]
 #[serial_test::file_serial]
 #[ignore = "needs an interactive desktop with an image wallpaper; changes the real wallpaper"]
-fn exe_matrix_from_image() {
+fn exe_format_matrix() {
     let h = Harness::bootstrap();
     h.require_image_baseline();
-    for case in all_cases() {
-        h.run(case, Launch::Exe, StartState::Image);
+    for case in FORMATS {
+        h.run_color(case, Input::ExeName, StartState::Image);
+    }
+    for case in FORMATS {
+        h.run_color(case, Input::ExeName, StartState::Color);
     }
 }
 
 #[test]
 #[serial_test::file_serial]
 #[ignore = "needs an interactive desktop; changes the real wallpaper"]
-fn exe_matrix_from_color() {
+fn shortcut_format_matrix() {
     let h = Harness::bootstrap();
-    for case in all_cases() {
-        h.run(case, Launch::Exe, StartState::Color);
+    for case in FORMATS {
+        h.run_color(case, Input::ShortcutName, StartState::Color);
     }
+}
+
+#[test]
+#[serial_test::file_serial]
+#[ignore = "needs an interactive desktop; changes the real wallpaper"]
+fn clipboard_format_matrix() {
+    let h = Harness::bootstrap();
+    for case in FORMATS.iter().chain(CLIPBOARD_EXTRA) {
+        h.run_color(case, Input::Clipboard, StartState::Color);
+    }
+}
+
+#[test]
+#[serial_test::file_serial]
+#[ignore = "needs an interactive desktop with an image wallpaper; changes the real wallpaper"]
+fn name_scenarios_from_image() {
+    let h = Harness::bootstrap();
+    h.require_image_baseline();
+    for case in SWITCHES.iter().chain(ERRORS) {
+        h.run(case, Launch::Exe, StartState::Image);
+    }
+    h.run(&RANDOM, Launch::Exe, StartState::Image);
 }
 
 #[test]
@@ -93,6 +115,7 @@ fn exe_matrix_from_color() {
 fn shortcut_smoke_from_image() {
     let h = Harness::bootstrap();
     h.require_image_baseline();
-    h.run(&FORMATS[0], Launch::Shortcut, StartState::Image); // a named color, via shortcut
+    let red = Case { args: "red", seed_clipboard: None, expect: Expect::Hex("#FF0000") };
+    h.run(&red, Launch::Shortcut, StartState::Image); // a named color, via shortcut
     h.run(&ERRORS[0], Launch::Shortcut, StartState::Image); // the error path, via shortcut
 }
